@@ -1,0 +1,49 @@
+{
+  "name": "TokensLottery",
+  "desc": "",
+  "methods": [
+    {
+      "name": "emitTicket",
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "unitName",
+          "type": "string"
+        },
+        {
+          "name": "quantity",
+          "type": "uint64"
+        },
+        {
+          "name": "cost",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "uint64"
+      }
+    },
+    {
+      "name": "seellTicket",
+      "args": [
+        {
+          "name": "quantity",
+          "type": "uint64"
+        }
+      ],
+      "returns": {
+        "type": "void"
+      }
+    },
+    {
+      "name": "createApplication",
+      "args": [],
+      "returns": {
+        "type": "void"
+      }
+    }
+  ]
+}
