@@ -12,8 +12,9 @@
     "fix": "eslint . --ext .ts --fix"
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "^6.0.2",
-    "algosdk": "^2.7.0"
+    "@algorandfoundation/algokit-utils": "^6.2.1",
+    "algosdk": "^2.9.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@algorandfoundation/algokit-client-generator": "^2.3.1",

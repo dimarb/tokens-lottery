@@ -16,16 +16,18 @@ export class TokensLottery extends Contract {
     return this.assetId.value;
   }
 
+  // Firma el
   seellTicket(quantity: uint64): void {
     sendPayment({
-      amount: this.cost.value * quantity, // Pago en microAlgos
+      amount: 100, // Pago en microAlgos
       receiver: this.app.address,
-      fee: 12_000,
     });
-    sendAssetTransfer({
-      assetReceiver: this.txn.sender,
-      assetAmount: quantity,
-      xferAsset: this.assetId.value,
-    });
+
+    // oppIn
+    // sendAssetTransfer({
+    //  assetReceiver: this.txn.sender,
+    //  assetAmount: 0,
+    //  xferAsset: this.assetId.value,
+    // });
   }
 }

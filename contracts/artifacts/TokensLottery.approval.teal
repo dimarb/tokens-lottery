@@ -123,62 +123,24 @@ emitTicket:
 seellTicket:
 	proto 1 0
 
-	// contracts/TokensLottery.algo.ts:20
+	// contracts/TokensLottery.algo.ts:21
 	// sendPayment({
-	//       amount: this.cost.value * quantity, // Pago en microAlgos
+	//       amount: 100, // Pago en microAlgos
 	//       receiver: this.app.address,
-	//       fee: 12_000,
 	//     })
 	itxn_begin
 	int pay
 	itxn_field TypeEnum
 
-	// contracts/TokensLottery.algo.ts:21
-	// amount: this.cost.value * quantity
-	byte 0x636f7374 // "cost"
-	app_global_get
-	frame_dig -1 // quantity: uint64
-	*
+	// contracts/TokensLottery.algo.ts:22
+	// amount: 100
+	int 100
 	itxn_field Amount
 
-	// contracts/TokensLottery.algo.ts:22
+	// contracts/TokensLottery.algo.ts:23
 	// receiver: this.app.address
 	global CurrentApplicationAddress
 	itxn_field Receiver
-
-	// contracts/TokensLottery.algo.ts:23
-	// fee: 12_000
-	int 12_000
-	itxn_field Fee
-
-	// Submit inner transaction
-	itxn_submit
-
-	// contracts/TokensLottery.algo.ts:25
-	// sendAssetTransfer({
-	//       assetReceiver: this.txn.sender,
-	//       assetAmount: quantity,
-	//       xferAsset: this.assetId.value,
-	//     })
-	itxn_begin
-	int axfer
-	itxn_field TypeEnum
-
-	// contracts/TokensLottery.algo.ts:26
-	// assetReceiver: this.txn.sender
-	txn Sender
-	itxn_field AssetReceiver
-
-	// contracts/TokensLottery.algo.ts:27
-	// assetAmount: quantity
-	frame_dig -1 // quantity: uint64
-	itxn_field AssetAmount
-
-	// contracts/TokensLottery.algo.ts:28
-	// xferAsset: this.assetId.value
-	byte 0x61737365744964 // "assetId"
-	app_global_get
-	itxn_field XferAsset
 
 	// Fee field not set, defaulting to 0
 	int 0
