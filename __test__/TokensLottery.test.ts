@@ -9,14 +9,17 @@ algokit.Config.configure({ populateAppCallResources: true });
 
 let appClient: TokensLotteryClient;
 let algodClient: algosdk.Algodv2;
-let appId: number;
+let buyerAccount: algosdk.Account;
+let assetId: number;
+let contractAddress: string;
+let transactionWithSigner: algosdk.TransactionWithSigner;
+const tokenConfig = { name: 'Lottery', unitName: 'Bill', quantity: 1000, cost: 100_000, sell: 1 };
 
-describe('Simulación del contrato inteligente TokensLottery', () => {
+describe('Simulate Smart Contract TokensLottery', () => {
   beforeEach(fixture.beforeEach);
 
   beforeAll(async () => {
     await fixture.beforeEach();
-    // Creador de la Aplicación
     const { testAccount } = fixture.context;
     const { algorand } = fixture;
     algodClient = algorand.client.algod;
@@ -29,49 +32,55 @@ describe('Simulación del contrato inteligente TokensLottery', () => {
       algorand.client.algod
     );
 
-    const resutl = await appClient.create.createApplication({});
-    appClient.appClient.fundAppAccount(algokit.microAlgos(250_000));
-    appId = Number(resutl.appId);
+    const result = await appClient.create.createApplication({});
+    await appClient.appClient.fundAppAccount(algokit.microAlgos(250_000));
+    contractAddress = result.appAddress;
   });
 
-  test('Emision de Billetes de Loteria', async () => {
-    const assetId = await appClient.emitTicket(
-      { name: 'Loteria', unitName: 'Billete', quantity: 1000, cost: 100_000 },
+  test('Emit Tokens', async () => {
+    const result = await appClient.emitTicket(
+      {
+        name: tokenConfig.name,
+        unitName: tokenConfig.unitName,
+        quantity: tokenConfig.quantity,
+        cost: tokenConfig.cost,
+      },
       { sendParams: { fee: algokit.microAlgos(12_000) } }
     );
+    assetId = Number(result.return);
     expect(assetId).not.toBeUndefined();
   });
-  test('Venta de Billetes de Loteria', async () => {
+
+  test('Token OptIn', async () => {
     await fixture.beforeEach();
     const { testAccount } = fixture.context;
+    buyerAccount = testAccount;
+    await algokit.assetOptIn({ assetId, account: buyerAccount }, algodClient);
+
     const suggestedParams = await algodClient.getTransactionParams().do();
-    suggestedParams.fee = 100;
 
-    const method = {
-      name: 'seellTicket',
-      args: [
-        {
-          name: 'quantity',
-          type: 'uint64',
-        },
-      ],
-      returns: {
-        type: 'void',
-      },
-    };
-
-    console.log('Receiber Account', testAccount.addr);
-
-    const txn = algosdk.makeApplicationCallTxnFromObject({
-      from: testAccount.addr,
-      appIndex: appId,
-      onComplete: algosdk.OnApplicationComplete.NoOpOC,
-      appArgs: [new algosdk.ABIMethod(method).getSelector(), new Uint8Array(2)],
+    const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+      from: buyerAccount.addr,
+      to: contractAddress,
+      amount: tokenConfig.cost * tokenConfig.sell + 1,
       suggestedParams,
     });
+    transactionWithSigner = {
+      txn: paymentTxn,
+      signer: algosdk.makeBasicAccountTransactionSigner(buyerAccount),
+    };
+    expect(transactionWithSigner).not.toBeUndefined();
+  });
 
-    const signedTxn = txn.signTxn(testAccount.sk);
-    const txId = await algodClient.sendRawTransaction(signedTxn).do();
-    console.log('Transaction created:', txId);
+  test('Sell Lottery Ticket', async () => {
+    await fixture.beforeEach();
+    const suggestedParams = await algodClient.getTransactionParams().do();
+    suggestedParams.fee = 1000;
+    const result = await appClient.call({
+      method: 'transferLottery',
+      methodArgs: [transactionWithSigner, tokenConfig.sell],
+      sendParams: { fee: algokit.microAlgos(12_000) },
+    });
+    expect(result).not.toBeUndefined();
   });
 });

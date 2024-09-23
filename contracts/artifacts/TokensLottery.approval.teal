@@ -108,39 +108,86 @@ emitTicket:
 	app_global_get
 	retsub
 
-// seellTicket(uint64)void
-*abi_route_seellTicket:
+// transferLottery(pay,uint64)void
+*abi_route_transferLottery:
 	// quantity: uint64
 	txna ApplicationArgs 1
 	btoi
 
-	// execute seellTicket(uint64)void
-	callsub seellTicket
+	// payment: pay
+	txn GroupIndex
+	int 1
+	-
+	dup
+	gtxns TypeEnum
+	int pay
+	==
+
+	// argument 1 (payment) for transferLottery must be a pay transaction
+	assert
+
+	// execute transferLottery(pay,uint64)void
+	callsub transferLottery
 	int 1
 	return
 
-// seellTicket(quantity: uint64): void
-seellTicket:
-	proto 1 0
+// transferLottery(payment: PayTxn, quantity: uint64): void
+transferLottery:
+	proto 2 0
 
-	// contracts/TokensLottery.algo.ts:21
-	// sendPayment({
-	//       amount: 100, // Pago en microAlgos
-	//       receiver: this.app.address,
+	// contracts/TokensLottery.algo.ts:20
+	// verifyPayTxn(payment, {
+	//       sender: payment.sender,
+	//       amount: { greaterThan: this.cost.value * quantity },
+	//     })
+	// verify sender
+	frame_dig -1 // payment: PayTxn
+	gtxns Sender
+	frame_dig -1 // payment: PayTxn
+	gtxns Sender
+	==
+
+	// transaction verification failed: {"txn":"payment","field":"sender","expected":"payment.sender"}
+	assert
+
+	// verify amount
+	frame_dig -1 // payment: PayTxn
+	gtxns Amount
+	byte 0x636f7374 // "cost"
+	app_global_get
+	frame_dig -2 // quantity: uint64
+	*
+	>
+
+	// transaction verification failed: {"txn":"payment","field":"amount","condition":"greaterThan","expected":">this.cost.value * quantity"}
+	assert
+
+	// contracts/TokensLottery.algo.ts:25
+	// sendAssetTransfer({
+	//       assetReceiver: payment.sender,
+	//       xferAsset: this.assetId.value,
+	//       assetAmount: quantity,
 	//     })
 	itxn_begin
-	int pay
+	int axfer
 	itxn_field TypeEnum
 
-	// contracts/TokensLottery.algo.ts:22
-	// amount: 100
-	int 100
-	itxn_field Amount
+	// contracts/TokensLottery.algo.ts:26
+	// assetReceiver: payment.sender
+	frame_dig -1 // payment: PayTxn
+	gtxns Sender
+	itxn_field AssetReceiver
 
-	// contracts/TokensLottery.algo.ts:23
-	// receiver: this.app.address
-	global CurrentApplicationAddress
-	itxn_field Receiver
+	// contracts/TokensLottery.algo.ts:27
+	// xferAsset: this.assetId.value
+	byte 0x61737365744964 // "assetId"
+	app_global_get
+	itxn_field XferAsset
+
+	// contracts/TokensLottery.algo.ts:28
+	// assetAmount: quantity
+	frame_dig -2 // quantity: uint64
+	itxn_field AssetAmount
 
 	// Fee field not set, defaulting to 0
 	int 0
@@ -164,9 +211,9 @@ seellTicket:
 
 *call_NoOp:
 	method "emitTicket(string,string,uint64,uint64)uint64"
-	method "seellTicket(uint64)void"
+	method "transferLottery(pay,uint64)void"
 	txna ApplicationArgs 0
-	match *abi_route_emitTicket *abi_route_seellTicket
+	match *abi_route_emitTicket *abi_route_transferLottery
 
 	// this contract does not implement the given ABI method for call NoOp
 	err

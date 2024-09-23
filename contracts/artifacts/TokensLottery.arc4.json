@@ -27,8 +27,12 @@
       }
     },
     {
-      "name": "seellTicket",
+      "name": "transferLottery",
       "args": [
+        {
+          "name": "payment",
+          "type": "pay"
+        },
         {
           "name": "quantity",
           "type": "uint64"
